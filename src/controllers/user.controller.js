@@ -98,7 +98,7 @@ const userTaskList = async (req, res) => {
 
 const getTaskDetail = async (req, res) => {
   try {
-    // get taskId from req.params
+    // get taskId from req.query
     const { taskId } = req.query;
 
     // validate taskId
@@ -133,4 +133,51 @@ const getTaskDetail = async (req, res) => {
   }
 };
 
-export { createTask, userTaskList, getTaskDetail };
+const updateTaskDetails = async (req, res) => {
+  try {
+    // get taskId from req.query
+    const { taskId } = req.query;
+
+    // get data from req.body
+    const { title, description, dueDate, status } = req.body;
+
+    if (!taskId || !mongoose.Types.ObjectId.isValid(taskId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Task Id",
+      });
+    }
+
+    const updatedTask = await Task.findByIdAndUpdate(
+      taskId,
+      {
+        title,
+        description,
+        dueDate,
+        status,
+      },
+      { new: true }
+    );
+
+    if (!updatedTask) {
+      return res.status(404).json({
+        success: false,
+        message: "Task not found",
+      });
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: "Task Updated Successfully",
+      updatedTask,
+    });
+  } catch (error) {
+    console.log(`Error Occured while Updating Task Details:- ${error}`);
+    return res.status(500).json({
+      success: false,
+      message: "Error in Update Task Details Controller",
+    });
+  }
+};
+
+export { createTask, userTaskList, getTaskDetail, updateTaskDetails };
