@@ -10,6 +10,7 @@ import {
   userTaskList,
   getTaskDetail,
   updateTaskDetails,
+  deleteTask,
 } from "../controllers/user.controller.js";
 
 const userRouter = express.Router();
@@ -24,5 +25,6 @@ userRouter.post("/create-task", verifyJWT, createTask);
 userRouter.get("/my-tasks", verifyJWT, userTaskList);
 userRouter.get("/tasks", verifyJWT, getTaskDetail);
 userRouter.put("/update-task", verifyJWT, updateTaskDetails);
+userRouter.get("/delete-task", verifyJWT, deleteTask);
 
 export default userRouter;

@@ -180,4 +180,52 @@ const updateTaskDetails = async (req, res) => {
   }
 };
 
-export { createTask, userTaskList, getTaskDetail, updateTaskDetails };
+const deleteTask = async (req, res) => {
+  try {
+    // get taskId from req.query
+    const { taskId } = req.query;
+
+    // get userId from req.user
+    const userId = req.user._id;
+
+    // validate taskId
+    if (!taskId || !mongoose.Types.ObjectId.isValid(taskId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Task Id",
+      });
+    }
+
+    // find the task by id and delete it
+    await Task.findByIdAndDelete(taskId);
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      {
+        $pull: {
+          tasks: taskId,
+        },
+      },
+      { new: true }
+    ).select("-password");
+
+    return res.status(200).json({
+      success: true,
+      message: "Task Deleted Successfully",
+      updatedUser,
+    });
+  } catch (error) {
+    console.log(`Error Occured while Deleting Task:- ${error}`);
+    return res.status(500).json({
+      success: false,
+      message: "Error in Delete Task Controller",
+    });
+  }
+};
+
+export {
+  createTask,
+  userTaskList,
+  getTaskDetail,
+  updateTaskDetails,
+  deleteTask,
+};
