@@ -5,7 +5,11 @@ import {
   logoutController,
 } from "../controllers/auth.controller.js";
 import verifyJWT from "../middlewares/auth.middleware.js";
-import { createTask, userTaskList } from "../controllers/user.controller.js";
+import {
+  createTask,
+  userTaskList,
+  getTaskDetail,
+} from "../controllers/user.controller.js";
 
 const userRouter = express.Router();
 
@@ -17,5 +21,6 @@ userRouter.get("/logout", verifyJWT, logoutController);
 // User Routes
 userRouter.post("/create-task", verifyJWT, createTask);
 userRouter.get("/my-tasks", verifyJWT, userTaskList);
+userRouter.get("/tasks", verifyJWT, getTaskDetail);
 
 export default userRouter;

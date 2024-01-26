@@ -1,5 +1,6 @@
 import User from "../models/user.model.js";
 import Task from "../models/task.model.js";
+import mongoose from "mongoose";
 
 const createTask = async (req, res) => {
   try {
@@ -95,4 +96,41 @@ const userTaskList = async (req, res) => {
   }
 };
 
-export { createTask, userTaskList };
+const getTaskDetail = async (req, res) => {
+  try {
+    // get taskId from req.params
+    const { taskId } = req.query;
+
+    // validate taskId
+    if (!taskId || !mongoose.Types.ObjectId.isValid(taskId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Task Id",
+      });
+    }
+
+    // find Task details corresponding to the taskId
+    const task = await Task.findById(taskId);
+
+    if (!task) {
+      return res.status(404).json({
+        success: false,
+        message: "Task not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Task Detail fetch successfully",
+      task,
+    });
+  } catch (error) {
+    console.log(`Error Occured while fetching Task Detail:- ${error}`);
+    return res.status(500).json({
+      success: false,
+      message: "Error Occured in Get Task Detail Controller",
+    });
+  }
+};
+
+export { createTask, userTaskList, getTaskDetail };
