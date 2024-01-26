@@ -11,6 +11,11 @@ import {
   getTaskDetail,
   updateTaskDetails,
   deleteTask,
+} from "../controllers/task.controller.js";
+import {
+  updateUserProfile,
+  changePassword,
+  deleteUserAccount,
 } from "../controllers/user.controller.js";
 
 const userRouter = express.Router();
@@ -20,11 +25,16 @@ userRouter.post("/register", registerController);
 userRouter.post("/login", loginController);
 userRouter.get("/logout", verifyJWT, logoutController);
 
-// User Routes
+// Task Routes
 userRouter.post("/create-task", verifyJWT, createTask);
 userRouter.get("/my-tasks", verifyJWT, userTaskList);
 userRouter.get("/tasks", verifyJWT, getTaskDetail);
 userRouter.put("/update-task", verifyJWT, updateTaskDetails);
 userRouter.get("/delete-task", verifyJWT, deleteTask);
+
+// User Routes
+userRouter.put("/update", verifyJWT, updateUserProfile);
+userRouter.put("/change-password", verifyJWT, changePassword);
+userRouter.get("/delete-account", verifyJWT, deleteUserAccount);
 
 export default userRouter;

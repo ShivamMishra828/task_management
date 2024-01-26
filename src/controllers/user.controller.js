@@ -1,231 +1,154 @@
 import User from "../models/user.model.js";
-import Task from "../models/task.model.js";
-import mongoose from "mongoose";
 
-const createTask = async (req, res) => {
+const updateUserProfile = async (req, res) => {
   try {
     // get data from req.body
-    const { title, description, dueDate } = req.body;
-
-    // get userId from req.user by verifyJWT middleware
-    const userId = req.user._id;
+    const { email, userName, fullName, gender } = req.body;
 
     // validate data
-    if (!title || !description) {
+    if (!(email || userName || fullName || gender)) {
       return res.status(400).json({
         success: false,
         message: "All fields are required",
       });
     }
 
-    const task = await Task.create({
-      title,
-      description,
-      dueDate,
-      assignedUser: userId,
-    });
-
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      {
-        $push: {
-          tasks: task._id,
-        },
-      },
-      { new: true }
-    ).select("-password");
-
-    return res.status(201).json({
-      success: true,
-      message: "Task Created Successfully",
-      task,
-      updatedUser,
-    });
-  } catch (error) {
-    console.log(`Error Occured while Creating Task:- ${error}`);
-    return res.status(500).json({
-      success: false,
-      message: "Error in Creating Task Controller",
-    });
-  }
-};
-
-const userTaskList = async (req, res) => {
-  try {
     // get userId from req.user
     const userId = req.user._id;
 
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized Request",
-      });
-    }
-
-    const userTasks = await User.findById(userId).populate({
-      path: "tasks",
-      match: {
-        status: "Pending",
-        dueDate: {
-          $gt: new Date(),
-        },
+    // find user corressponding to userID and update details
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      {
+        email,
+        userName,
+        fullName,
+        gender,
       },
-      select: "-_id title description dueDate status assignedUser",
-    });
+      { new: true }
+    );
 
-    const tasks = userTasks.tasks;
-
-    if (!userTasks) {
+    if (!updatedUser) {
       return res.status(404).json({
         success: false,
         message: "User not found",
       });
     }
 
-    return res.status(200).json({
-      success: true,
-      message: "Tasks Fetched Successfully",
-      taskDetails: tasks,
-    });
-  } catch (error) {
-    console.log(`Error Occured while fetch User Task List:- ${error}`);
-    return res.status(500).json({
-      success: false,
-      message: "Error in User Task List Controller",
-    });
-  }
-};
-
-const getTaskDetail = async (req, res) => {
-  try {
-    // get taskId from req.query
-    const { taskId } = req.query;
-
-    // validate taskId
-    if (!taskId || !mongoose.Types.ObjectId.isValid(taskId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid Task Id",
-      });
-    }
-
-    // find Task details corresponding to the taskId
-    const task = await Task.findById(taskId);
-
-    if (!task) {
-      return res.status(404).json({
-        success: false,
-        message: "Task not found",
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: "Task Detail fetch successfully",
-      task,
-    });
-  } catch (error) {
-    console.log(`Error Occured while fetching Task Detail:- ${error}`);
-    return res.status(500).json({
-      success: false,
-      message: "Error Occured in Get Task Detail Controller",
-    });
-  }
-};
-
-const updateTaskDetails = async (req, res) => {
-  try {
-    // get taskId from req.query
-    const { taskId } = req.query;
-
-    // get data from req.body
-    const { title, description, dueDate, status } = req.body;
-
-    if (!taskId || !mongoose.Types.ObjectId.isValid(taskId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid Task Id",
-      });
-    }
-
-    const updatedTask = await Task.findByIdAndUpdate(
-      taskId,
-      {
-        title,
-        description,
-        dueDate,
-        status,
-      },
-      { new: true }
-    );
-
-    if (!updatedTask) {
-      return res.status(404).json({
-        success: false,
-        message: "Task not found",
-      });
-    }
-
     return res.status(201).json({
       success: true,
-      message: "Task Updated Successfully",
-      updatedTask,
+      message: "User Details Updated Successfully",
+      updatedUser,
     });
   } catch (error) {
-    console.log(`Error Occured while Updating Task Details:- ${error}`);
+    console.log(`Error Occured while Updating User Profile:- ${error}`);
     return res.status(500).json({
       success: false,
-      message: "Error in Update Task Details Controller",
+      message: "Error in Update User Profile Controller",
     });
   }
 };
 
-const deleteTask = async (req, res) => {
+const changePassword = async (req, res) => {
   try {
-    // get taskId from req.query
-    const { taskId } = req.query;
+    // get data from req.body
+    const { oldPassword, newPassword, confirmNewPassword } = req.body;
+
+    // validate data
+    if (!oldPassword || !newPassword || !confirmNewPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required",
+      });
+    }
 
     // get userId from req.user
     const userId = req.user._id;
 
-    // validate taskId
-    if (!taskId || !mongoose.Types.ObjectId.isValid(taskId)) {
-      return res.status(400).json({
+    // get user details from userId
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
         success: false,
-        message: "Invalid Task Id",
+        message: "User not found",
       });
     }
 
-    // find the task by id and delete it
-    await Task.findByIdAndDelete(taskId);
+    const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+
+    if (!isPasswordCorrect) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid Credentials",
+      });
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "New Password and Confirm New Password doesn't match",
+      });
+    }
+
     const updatedUser = await User.findByIdAndUpdate(
-      userId,
+      user._id,
       {
-        $pull: {
-          tasks: taskId,
-        },
+        password: newPassword,
       },
       { new: true }
-    ).select("-password");
+    );
 
-    return res.status(200).json({
+    return res.status(201).json({
       success: true,
-      message: "Task Deleted Successfully",
+      message: "Password Changed Successfully",
       updatedUser,
     });
   } catch (error) {
-    console.log(`Error Occured while Deleting Task:- ${error}`);
+    console.log(`Error Occured while Changing Password:- ${error}`);
     return res.status(500).json({
       success: false,
-      message: "Error in Delete Task Controller",
+      message: "Error in Change Password Controller",
     });
   }
 };
 
-export {
-  createTask,
-  userTaskList,
-  getTaskDetail,
-  updateTaskDetails,
-  deleteTask,
+const deleteUserAccount = async (req, res) => {
+  try {
+    // get userId from req.user
+    const userId = req.user._id;
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const isPasswordCorrect = await user.isPasswordCorrect(user.password);
+
+    if (!isPasswordCorrect) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Credentials",
+      });
+    }
+
+    await User.findByIdAndDelete(user._id);
+
+    return res.status(200).json({
+      success: true,
+      message: "User Account deleted successfully",
+    });
+  } catch (error) {
+    console.log(`Error Occured while Deleting User Account:- ${error}`);
+    return res.status(500).json({
+      success: false,
+      message: "Error Occured in Delete Account Controller",
+    });
+  }
 };
+
+export { updateUserProfile, changePassword, deleteUserAccount };
